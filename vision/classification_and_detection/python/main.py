@@ -45,7 +45,7 @@ SUPPORTED_DATASETS = {
          {"image_size": [300, 300, 3]}),
     "coco-300-pt":
         (coco.Coco, dataset.pre_process_coco_pt_mobilenet, coco.PostProcessCocoPt(False,0.3),
-         {"image_size": [300, 300, 3]}),         
+         {"image_size": [300, 300, 3]}),
     "coco-1200":
         (coco.Coco, dataset.pre_process_coco_resnet34, coco.PostProcessCoco(),
          {"image_size": [1200, 1200, 3]}),
@@ -83,6 +83,13 @@ SUPPORTED_PROFILES = {
         "dataset": "imagenet",
         "outputs": "ArgMax:0",
         "backend": "onnxruntime",
+        "model-name": "resnet50",
+    },
+    "resnet50-paddle-onednn": {
+        "inputs": "x2paddle_input_tensor_0",
+        "outputs": "save_infer_model/scale_0.tmp_0",
+        "dataset": "imagenet",
+        "backend": "paddle-onednn",
         "model-name": "resnet50",
     },
 
@@ -240,10 +247,13 @@ def get_backend(backend):
         backend = BackendPytorch()
     elif backend == "pytorch-native":
         from backend_pytorch_native import BackendPytorchNative
-        backend = BackendPytorchNative()      
+        backend = BackendPytorchNative()
     elif backend == "tflite":
         from backend_tflite import BackendTflite
         backend = BackendTflite()
+    elif backend == "paddle-onednn":
+        from backend_paddle_onednn import BackendPaddleOneDNN
+        backend = BackendPaddleOneDNN()
     else:
         raise ValueError("unknown backend: " + backend)
     return backend

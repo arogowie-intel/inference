@@ -18,7 +18,7 @@ device="cpu"
 
 for i in $* ; do
     case $i in
-       tf|onnxruntime|tflite|pytorch) backend=$i; shift;;
+       tf|onnxruntime|tflite|pytorch|paddle-onednn) backend=$i; shift;;
        cpu|gpu) device=$i; shift;;
        gpu) device=gpu; shift;;
        resnet50|mobilenet|ssd-mobilenet|ssd-resnet34|ssd-resnet34-tf) model=$i; shift;;
@@ -109,6 +109,14 @@ if [ $name == "mobilenet-tflite" ] ; then
     model_path="$MODEL_DIR/mobilenet_v1_1.0_224.tflite"
     profile=mobilenet-tf
     extra_args="$extra_args --backend tflite"
+fi
+
+#
+# PaddlePaddle
+#
+if [ $name == "resnet50-paddle-onednn" ] ; then
+    model_path="$MODEL_DIR/__model__"
+    profile=resnet50-paddle-onednn
 fi
 
 name="$backend-$device/$model"
