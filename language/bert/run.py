@@ -24,15 +24,19 @@ import subprocess
 
 from squad_QSL import get_squad_QSL
 
+MILLI_SEC = 1000
+
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--backend", choices=["tf","pytorch","onnxruntime","tf_estimator"], default="tf", help="Backend")
+    parser.add_argument("--backend", choices=["tf","pytorch","onnxruntime","tf_estimator", "paddle"], default="tf", help="Backend")
     parser.add_argument("--scenario", choices=["SingleStream", "Offline", "Server", "MultiStream"], default="Offline", help="Scenario")
     parser.add_argument("--accuracy", action="store_true", help="enable accuracy pass")
     parser.add_argument("--quantized", action="store_true", help="use quantized model (only valid for onnxruntime backend)")
     parser.add_argument("--profile", action="store_true", help="enable profiling (only valid for onnxruntime backend)")
     parser.add_argument("--mlperf_conf", default="build/mlperf.conf", help="mlperf rules config")
     parser.add_argument("--user_conf", default="user.conf", help="user config for user LoadGen settings such as target QPS")
+    parser.add_argument("--time", type=int, help="time to scan in seconds")
+    parser.add_argument("--count", type=int, help="dataset items to use")
     args = parser.parse_args()
     return args
 
@@ -64,6 +68,9 @@ def main():
     elif args.backend == "onnxruntime":
         from onnxruntime_SUT import get_onnxruntime_sut
         sut = get_onnxruntime_sut(args)
+    elif args.backend == "paddle":
+        from paddle_onednn_SUT import get_paddle_sut
+        sut = get_paddle_sut(args)
     else:
         raise ValueError("Unknown backend: {:}".format(args.backend))
 
@@ -77,6 +84,15 @@ def main():
     else:
         settings.mode = lg.TestMode.PerformanceOnly
 
+    if args.time:
+        # override the time we want to run
+        settings.min_duration_ms = args.time * MILLI_SEC
+        settings.max_duration_ms = args.time * MILLI_SEC
+
+    if args.count:
+        settings.min_query_count = args.count
+        settings.max_query_count = args.count
+
     log_path = "build/logs"
     if not os.path.exists(log_path):
         os.makedirs(log_path)
@@ -85,6 +101,9 @@ def main():
     log_output_settings.copy_summary_to_stdout = True
     log_settings = lg.LogSettings()
     log_settings.log_output = log_output_settings
+
+    if args.backend == "paddle":
+        sut.warmup()
 
     print("Running LoadGen test...")
     lg.StartTestWithLogSettings(sut.sut, sut.qsl.qsl, settings, log_settings)
