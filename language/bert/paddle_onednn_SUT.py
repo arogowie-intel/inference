@@ -41,12 +41,13 @@ class BERT_PaddleOneDNN_SUT():
         config.enable_mkldnn()
         nthr = int(os.environ.get('OMP_NUM_THREADS', 40))
         config.set_cpu_math_library_num_threads(nthr)
-        # config.disable_glog_info()
+        config.disable_glog_info()
         config.enable_memory_optim()
 
         # Those two passess brake-up things around matmul op with output: `matmul_3.tmp_0`
         config.delete_pass("reshape_transpose_matmul_mkldnn_fuse_pass")
         config.delete_pass("matmul_transpose_reshape_fuse_pass")
+
         config.switch_ir_optim(True)
         config.switch_use_feed_fetch_ops(False)
         # config.switch_ir_debug(True)
